@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeCodeBot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff; /* Fundo branco */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 60%;
+            max-width: 800px;
+            background-color: #333; /* Fundo do container preto */
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #FFD700; /* Fundo amarelo */
+            color: #000; /* Texto preto */
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .chat-messages {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #000; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message.bot {
+            justify-content: flex-start;
+        }
+        .message .content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        .message.user .content {
+            background-color: #FFD700; /* Fundo amarelo */
+            color: #000; /* Texto preto */
+        }
+        .message.bot .content {
+            background-color: #333; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+        }
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #FFD700; /* Borda amarela */
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 0;
+            outline: none;
+            font-size: 16px;
+            background-color: #333; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+        }
+        .chat-input button {
+            padding: 15px;
+            background-color: #FFD700; /* Fundo amarelo */
+            color: #000; /* Texto preto */
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            TimeCodeBot | EY
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be dynamically added here -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value;
+            if (message.trim() === '') return;
+
+            const response = await fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+
+            const messages = await response.json();
+            updateChat(messages);
+            input.value = '';
+        }
+
+        async function fetchMessages() {
+            const response = await fetch('/get_messages');
+            const messages = await response.json();
+            updateChat(messages);
+        }
+
+        function updateChat(messages) {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = '';
+            messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', msg.sender);
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('content');
+                contentDiv.textContent = msg.content;
+                messageDiv.appendChild(contentDiv);
+                chatMessages.appendChild(messageDiv);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Fetch messages initially
+        fetchMessages();
+    </script>
+</body>
+</html>

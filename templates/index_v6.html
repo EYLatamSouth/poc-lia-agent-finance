@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Accelerator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #282828; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 60%;
+            max-width: 800px;
+            background-color: #333; /* Fundo do container preto */
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #FFD700; /* Fundo amarelo */
+            color: #000; /* Texto preto */
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .chat-messages {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #000; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message.bot {
+            justify-content: flex-start;
+        }
+        .message .content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        .message.user .content {
+            background-color: #FFD700; /* Fundo amarelo */
+            color: #000; /* Texto preto */
+        }
+        .message.bot .content {
+            background-color: #333; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+        }
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #FFD700; /* Borda amarela */
+            padding: 10px; /* Adiciona um pouco de espaço */
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 0;
+            outline: none;
+            font-size: 16px;
+            background-color: #333; /* Fundo preto */
+            color: #FFD700; /* Texto amarelo */
+        }
+        .chat-input button {
+            padding: 15px;
+            background-color: #FFD700; /* Fundo amarelo */
+            color: #000; /* Texto preto */
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .loading {
+            font-style: italic;
+            color: gray;
+            text-align: center;
+            margin: 10px 0; /* Espaçamento acima e abaixo */
+            display: none; /* Inicialmente escondido */
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Analytics Accelerator | EY
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be dynamically added here -->
+        </div>
+        <div class="loading" id="loading">Gerando a resposta...</div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value;
+            if (message.trim() === '') return;
+
+            // Adiciona a mensagem do usuário imediatamente
+            addMessage('user', message);
+            input.value = '';
+
+            // Mostra a mensagem de carregamento
+            document.getElementById('loading').style.display = 'block';
+
+            // Envia a mensagem para o servidor
+            const response = await fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+
+            const messages = await response.json();
+            updateChat(messages);
+
+            // Esconde a mensagem de carregamento
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function addMessage(sender, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+            const contentDiv = document.createElement('div');
+            contentDiv.classList.add('content');
+            contentDiv.innerHTML = content;
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Rolagem automática
+        }
+
+        function updateChat(messages) {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = ''; // Limpa mensagens anteriores
+            messages.forEach(msg => {
+                addMessage(msg.sender, msg.content);
+            });
+        }
+
+        // Fetch messages initially
+        async function fetchMessages() {
+            const response = await fetch('/get_messages');
+            const messages = await response.json();
+            updateChat(messages);
+        }
+
+        fetchMessages(); // Carrega mensagens ao iniciar
+    </script>
+</body>
+</html>

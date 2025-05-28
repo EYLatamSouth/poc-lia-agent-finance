@@ -1,0 +1,2 @@
+# Acelerador de Analytics - Finance
+Este repositório está destinado à organização da solução baseada em um agente de IA generativa para dados de Finance, a fim de ser utilizado como demo para propostas da área.

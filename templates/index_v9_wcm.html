@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Acelerador de Análises</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #ffffff;
+      padding: 20px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .sidebar label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #1e2a38;
+      font-size: 14px;
+    }
+
+    .sidebar button {
+      background-color: #1e2a38;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, border 0.2s;
+    }
+
+    .sidebar button:hover {
+      background-color: #2f3e4e;
+    }
+
+    .sidebar button.selected {
+      background-color: #3c4b5d;
+      border: 2px solid #1e2a38;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background-color: #1e2a38;
+      color: white;
+      padding: 15px 20px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-header img {
+      height: 28px;
+    }
+
+    .chat-messages {
+      padding: 20px;
+      height: 400px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      display: flex;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message.bot {
+      justify-content: flex-start;
+    }
+
+    .message .content {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      font-size: 15px;
+      background-color: #e0e0e0;
+    }
+
+    .message.user .content {
+      background-color: #1e2a38;
+      color: white;
+    }
+
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #ddd;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .chat-input button {
+      margin-left: 10px;
+      padding: 15px 20px;
+      background-color: #1e2a38;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .loading {
+      font-style: italic;
+      color: gray;
+      text-align: center;
+      margin: 10px 0;
+      display: none;
+    }
+
+    .sidebar-label {
+    font-weight: bold;
+    color: #1e2a38;
+    font-size: 14px;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <label class="sidebar-label">Bancos de Dados</label>
+    <button data-id="trades_payable" onclick="toggleSelection(this)">Trades Payable</button>
+    <button data-id="trades_receivable" onclick="toggleSelection(this)">Trades Receivable</button>
+    <button data-id="working-capital" onclick="toggleSelection(this)">Working Capital</button>
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <div>Acelerador de Análises</div>
+      <img src="/static/logo_ey.png" alt="EY Logo" />
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <!-- Mensagens são adicionadas aqui -->
+    </div>
+
+    <div class="loading" id="loading">Gerando a resposta...</div>
+
+    <div class="chat-input">
+      <input type="text" id="message-input" placeholder="Digite uma mensagem..." />
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    const selectedDatabases = new Set();
+
+    function toggleSelection(button) {
+      const id = button.getAttribute('data-id');
+      if (selectedDatabases.has(id)) {
+        selectedDatabases.delete(id);
+        button.classList.remove('selected');
+      } else {
+        selectedDatabases.add(id);
+        button.classList.add('selected');
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('message-input');
+      const message = input.value;
+      if (message.trim() === '') return;
+
+      addMessage('user', message);
+      input.value = '';
+      document.getElementById('loading').style.display = 'block';
+
+      const databases = Array.from(selectedDatabases);
+
+      const response = await fetch('/send_message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, databases })
+      });
+
+      const messages = await response.json();
+      updateChat(messages);
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function addMessage(sender, content) {
+      const chatMessages = document.getElementById('chat-messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message', sender);
+      const contentDiv = document.createElement('div');
+      contentDiv.classList.add('content');
+      contentDiv.innerHTML = content;
+      messageDiv.appendChild(contentDiv);
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function updateChat(messages) {
+      const chatMessages = document.getElementById('chat-messages');
+      chatMessages.innerHTML = '';
+      messages.forEach(msg => {
+        addMessage(msg.sender, msg.content);
+      });
+    }
+
+    async function fetchMessages() {
+      const response = await fetch('/get_messages');
+      const messages = await response.json();
+      updateChat(messages);
+    }
+
+    fetchMessages();
+  </script>
+</body>
+</html>
